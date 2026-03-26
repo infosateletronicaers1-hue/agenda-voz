@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<title>Agenda Voz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#13131a;--card:#1a1a25;--border:#2a2a3a;--accent:#7c6af7;--accent2:#f76a8c;--accent3:#6af7c8;--text:#f0f0f8;--muted:#7a7a9a;--warn:#f7c46a}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;top:-30%;left:-20%;width:70%;height:70%;background:radial-gradient(circle,rgba(124,106,247,0.12) 0%,transparent 70%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;bottom:-20%;right:-10%;width:60%;height:60%;background:radial-gradient(circle,rgba(247,106,140,0.08) 0%,transparent 70%);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:430px;margin:0 auto;padding:0 0 100px}
+.header{padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(10,10,15,0.88);backdrop-filter:blur(16px);z-index:100;border-bottom:1px solid var(--border)}
+.htitle{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.htitle span{color:var(--accent)}
+.htime{font-size:12px;color:var(--muted);text-align:right}
+.voice-sec{padding:22px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.vbtn{width:76px;height:76px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;transition:transform .15s;color:#fff}
+.vbtn.listening{animation:pulse 1.2s infinite}
+.vbtn:active{transform:scale(.93)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(124,106,247,.5)}70%{box-shadow:0 0 0 22px rgba(124,106,247,0)}100%{box-shadow:0 0 0 0 rgba(124,106,247,0)}}
+.vlabel{font-size:13px;color:var(--muted);font-weight:500}
+.vstatus{font-size:13px;color:var(--accent3);padding:4px 14px;background:rgba(106,247,200,.08);border-radius:20px;font-weight:500;max-width:90%;text-align:center;word-break:break-word}
+.qadd{margin:0 16px 16px;display:flex;gap:8px}
+.qinput{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
+.qinput::placeholder{color:var(--muted)}
+.qbtn{background:var(--accent);border:none;border-radius:12px;width:44px;height:44px;cursor:pointer;font-size:20px;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.perm-box{margin:0 16px 16px;background:rgba(247,196,106,.07);border:1px solid rgba(247,196,106,.35);border-radius:14px;padding:14px 16px;font-size:13px;color:var(--warn);line-height:1.7}
+.perm-box b{display:block;font-size:14px;margin-bottom:4px}
+.tabs{display:flex;margin:0 16px 14px;background:var(--card);border-radius:12px;padding:3px;border:1px solid var(--border)}
+.tab{flex:1;border:none;background:none;color:var(--muted);padding:8px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--accent);color:#fff}
+.sec{padding:0 16px}
+.slabel{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:11px;animation:slidein .3s ease}
+@keyframes slidein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card.urgent{border-color:rgba(247,196,106,.5);border-left:3px solid var(--warn)}
+.card.past{opacity:.42}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.ctitle{font-size:15px;font-weight:500;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+.cactions{display:flex;gap:4px}
+.ibtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.ibtn:active{background:var(--border)}
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.toast{position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--card);border:1px solid var(--accent);color:var(--text);padding:12px 20px;border-radius:14px;font-size:13px;z-index:999;opacity:0;transition:all .3s ease;white-space:nowrap;max-width:92vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.4);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:430px;margin:0 auto;transform:translateY(40px);transition:transform .3s ease}
+.overlay.show .modal{transform:translateY(0)}
+.mtitle{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:18px}
+label{font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:5px}
+.minput{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:14px;display:block;-webkit-appearance:none}
+.minput:focus{border-color:var(--accent)}
+textarea.minput{height:64px;resize:none}
+.mrow{display:flex;gap:10px}
+.mrow>div{flex:1}
+.colors{display:flex;gap:8px;margin-bottom:14px}
+.cdot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.cdot.sel{border-color:#fff;transform:scale(1.2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.chip{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:var(--surface);font-weight:500;transition:all .15s}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(124,106,247,.1)}
+.mactions{display:flex;gap:10px}
+.bpri{flex:1;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;padding:14px;color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.bsec{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 20px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,15,.92);backdrop-filter:blur(16px);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:10px 0 18px;z-index:100}
+.nbtn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 16px;color:var(--muted);font-size:10px;font-family:'DM Sans',sans-serif}
+.nbtn span:first-child{font-size:22px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div class="htitle">Agenda <span>Voz</span></div>
+  <div class="htime" id="htime">--:--</div>
+</div>
+
+<div class="voice-sec">
+  <button class="vbtn" id="vbtn" onclick="toggleVoice()">🎤</button>
+  <div class="vlabel">Toque para falar um compromisso</div>
+  <div class="vstatus" id="vstatus" style="display:none"></div>
+</div>
+
+<div id="permBox" class="perm-box" style="display:none">
+  <b>🔒 Como liberar o microfone no Chrome:</b>
+  1. Toque no ícone 🔒 na barra de endereço<br>
+  2. Toque em <b>Permissões do site</b><br>
+  3. Ative o <b>Microfone</b><br>
+  4. Recarregue a página e tente novamente
+</div>
+
+<div class="qadd">
+  <input class="qinput" id="qi" placeholder="Adicionar compromisso rápido..." onkeydown="if(event.key==='Enter')qAdd()">
+  <button class="qbtn" onclick="qAdd()">＋</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="setView('hoje',this)">Hoje</button>
+  <button class="tab" onclick="setView('semana',this)">Semana</button>
+  <button class="tab" onclick="setView('todos',this)">Todos</button>
+</div>
+
+<div class="sec">
+  <div class="slabel" id="slabel">Hoje</div>
+  <div id="list"></div>
+</div>
+</div>
+
+<div class="bnav">
+  <button class="nbtn"><span>📅</span>Agenda</button>
+  <button class="nbtn" onclick="openModal()"><span>➕</span>Novo</button>
+  <button class="nbtn" onclick="reqNotif()"><span>🔔</span>Alertas</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+<div class="modal">
+  <div class="mtitle" id="mtitle">Novo Compromisso</div>
+  <label>Título *</label>
+  <input class="minput" id="mT" placeholder="Ex: Reunião com cliente">
+  <div class="mrow">
+    <div><label>Data *</label><input type="date" class="minput" id="mD"></div>
+    <div><label>Hora *</label><input type="time" class="minput" id="mH"></div>
+  </div>
+  <label>Local</label>
+  <input class="minput" id="mL" placeholder="Ex: Sala 2, Rua...">
+  <label>Notas</label>
+  <textarea class="minput" id="mN" placeholder="Informações adicionais..."></textarea>
+  <label>Cor</label>
+  <div class="colors">
+    <div class="cdot sel" style="background:#7c6af7" data-c="#7c6af7" onclick="selColor(this)"></div>
+    <div class="cdot" style="background:#f76a8c" data-c="#f76a8c" onclick="selColor(this)"></div>
+    <div class="cdot" style="background:#6af7c8" data-c="#6af7c8" onclick="selColor(this)"></div>
+    <div class="cdot" style="background:#f7c46a" data-c="#f7c46a" onclick="selColor(this)"></div>
+    <div class="cdot" style="background:#6ab4f7" data-c="#6ab4f7" onclick="selColor(this)"></div>
+  </div>
+  <label>Avisar com antecedência</label>
+  <div class="chips">
+    <div class="chip active" data-m="5" onclick="togAlarm(this)">5 min</div>
+    <div class="chip active" data-m="15" onclick="togAlarm(this)">15 min</div>
+    <div class="chip" data-m="30" onclick="togAlarm(this)">30 min</div>
+    <div class="chip" data-m="60" onclick="togAlarm(this)">1 hora</div>
+    <div class="chip" data-m="1440" onclick="togAlarm(this)">1 dia</div>
+  </div>
+  <div class="mactions">
+    <button class="bsec" onclick="closeModal()">Cancelar</button>
+    <button class="bpri" onclick="saveEv()">Salvar</button>
+  </div>
+</div>
+</div>
+
+<script>
+let evs=JSON.parse(localStorage.getItem('av3')||'[]');
+let view='hoje',editId=null,selCol='#7c6af7',selAlarms=[5,15];
+let recog=null,listening=false,alarmTmrs=[];
+const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function pad(x){return String(x).padStart(2,'0')}
+function today(){return new Date().toISOString().split('T')[0]}
+
+// Clock
+(function tick(){
+  const n=new Date();
+  document.getElementById('htime').textContent=
+    pad(n.getHours())+':'+pad(n.getMinutes())+' • '+DAYS[n.getDay()]+', '+n.getDate()+' '+MONTHS[n.getMonth()];
+  setTimeout(tick,30000);
+})();
+
+// Toast
+let tTmr;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(tTmr);tTmr=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// TTS
+function speak(txt){
+  if(!window.speechSynthesis)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt);
+  u.lang='pt-BR';u.rate=1.05;
+  speechSynthesis.speak(u);
+}
+
+// Voice
+function toggleVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('⚠️ Use o Chrome para reconhecimento de voz');return;}
+  if(listening){recog&&recog.stop();return;}
+
+  // Request mic permission explicitly first
+  navigator.mediaDevices.getUserMedia({audio:true})
+    .then(stream=>{
+      stream.getTracks().forEach(t=>t.stop()); // just check permission
+      document.getElementById('permBox').style.display='none';
+      startRecog(SR);
+    })
+    .catch(err=>{
+      document.getElementById('permBox').style.display='block';
+      toast('🔒 Permita o microfone para usar a voz');
+    });
+}
+
+function startRecog(SR){
+  recog=new SR();
+  recog.lang='pt-BR';
+  recog.continuous=false;
+  recog.interimResults=true;
+  recog.maxAlternatives=1;
+
+  recog.onstart=()=>{
+    listening=true;
+    const b=document.getElementById('vbtn');
+    b.classList.add('listening');b.textContent='🔴';
+    showSt('Ouvindo... fale agora 🎙️');
+  };
+  recog.onresult=(e)=>{
+    const t=e.results[0][0].transcript;
+    showSt('"'+t+'"');
+    if(e.results[0].isFinal)parseVoice(t);
+  };
+  recog.onerror=(e)=>{
+    stopListen();
+    if(e.error==='not-allowed'||e.error==='permission-denied'){
+      document.getElementById('permBox').style.display='block';
+      toast('🔒 Microfone bloqueado');
+    }else if(e.error==='no-speech'){
+      toast('🔇 Nada detectado, tente novamente');
+    }else{
+      toast('❌ Erro: '+e.error);
+    }
+  };
+  recog.onend=()=>stopListen();
+  recog.start();
+}
+
+function stopListen(){
+  listening=false;
+  const b=document.getElementById('vbtn');
+  b.classList.remove('listening');b.textContent='🎤';
+  setTimeout(hideSt,2500);
+}
+function showSt(m){const s=document.getElementById('vstatus');s.textContent=m;s.style.display='block';}
+function hideSt(){document.getElementById('vstatus').style.display='none';}
+
+function parseVoice(text){
+  const low=text.toLowerCase();
+  let hour=null,min=0;
+  const tm=low.match(/(\d{1,2})[:\s](\d{2})(?:\s*h)?/);
+  const hm=low.match(/(\d{1,2})\s*(?:horas?|h\b)/);
+  if(tm){hour=+tm[1];min=+tm[2];}
+  else if(hm)hour=+hm[1];
+  else if(low.includes('meio-dia')||low.includes('meio dia'))hour=12;
+  else if(low.includes('meia-noite')||low.includes('meia noite'))hour=0;
+
+  let date=new Date();
+  if(low.includes('amanhã'))date.setDate(date.getDate()+1);
+  else if(low.includes('depois de amanhã'))date.setDate(date.getDate()+2);
+
+  if(hour!==null){
+    if((low.includes('tarde')||low.includes('noite'))&&hour<12)hour+=12;
+    if(low.includes('manhã')&&hour>=12)hour-=12;
+  }
+
+  let title=text
+    .replace(/\b(amanhã|depois de amanhã|hoje|às|as|de|da|do|para|no|na|em)\s*/gi,'')
+    .replace(/\d{1,2}[:\s]\d{2}/g,'')
+    .replace(/\d{1,2}\s*(?:horas?|h)\b/gi,'')
+    .replace(/\b(manhã|tarde|noite|meio[\s-]?dia|meia[\s-]?noite)\b/gi,'')
+    .replace(/\s+/g,' ').trim();
+  if(!title)title=text;
+  title=title[0].toUpperCase()+title.slice(1);
+
+  openModal();
+  document.getElementById('mT').value=title;
+  document.getElementById('mD').value=date.toISOString().split('T')[0];
+  if(hour!==null)document.getElementById('mH').value=pad(hour)+':'+pad(min);
+  speak('Adicionando: '+title);
+}
+
+// Notifications
+function reqNotif(){
+  if(!('Notification'in window)){toast('Notificações não suportadas');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){toast('🔔 Notificações ativadas!');schedAlarms();}
+    else toast('Permissão de notificação negada');
+  });
+}
+
+// Alarms
+function schedAlarms(){
+  alarmTmrs.forEach(clearTimeout);alarmTmrs=[];
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const now=new Date();
+  evs.forEach(ev=>{
+    if(!ev.alarms||!ev.alarms.length)return;
+    const evD=new Date(ev.date+'T'+ev.time);
+    if(evD<now)return;
+    ev.alarms.forEach(m=>{
+      const at=new Date(evD-m*60000);
+      const delay=at-now;
+      if(delay>0){alarmTmrs.push(setTimeout(()=>fireAlarm(ev,m),delay));}
+    });
+  });
+}
+
+function fireAlarm(ev,mins){
+  const msg=mins===0?`⏰ Agora: ${ev.title}`:
+    mins<60?`⏰ ${ev.title} em ${mins} min`:
+    `⏰ ${ev.title} em ${Math.round(mins/60)}h`;
+  toast(msg);
+  speak(mins===0?`Atenção! ${ev.title} começando agora!`:
+    `Lembrete: ${ev.title} em ${mins<60?mins+' minutos':Math.round(mins/60)+' hora'}.`);
+  if(Notification.permission==='granted')
+    new Notification('Agenda Voz',{body:msg});
+}
+
+// CRUD
+function saveLocal(){localStorage.setItem('av3',JSON.stringify(evs));}
+
+function openModal(id=null){
+  editId=id;
+  if(id){
+    const ev=evs.find(e=>e.id===id);if(!ev)return;
+    document.getElementById('mtitle').textContent='Editar';
+    document.getElementById('mT').value=ev.title;
+    document.getElementById('mD').value=ev.date;
+    document.getElementById('mH').value=ev.time;
+    document.getElementById('mL').value=ev.local||'';
+    document.getElementById('mN').value=ev.notes||'';
+    selCol=ev.color||'#7c6af7';
+    selAlarms=[...(ev.alarms||[5,15])];
+  }else{
+    document.getElementById('mtitle').textContent='Novo Compromisso';
+    ['mT','mL','mN'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mD').value=today();
+    document.getElementById('mH').value='';
+    selCol='#7c6af7';selAlarms=[5,15];
+  }
+  document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('sel',d.dataset.c===selCol));
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',selAlarms.includes(+c.dataset.m)));
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){document.getElementById('modal').classList.remove('show');editId=null;}
+function selColor(el){document.querySelectorAll('.cdot').forEach(d=>d.classList.remove('sel'));el.classList.add('sel');selCol=el.dataset.c;}
+function togAlarm(el){
+  el.classList.toggle('active');
+  const m=+el.dataset.m;
+  if(el.classList.contains('active')&&!selAlarms.includes(m))selAlarms.push(m);
+  else selAlarms=selAlarms.filter(a=>a!==m);
+}
+
+function saveEv(){
+  const title=document.getElementById('mT').value.trim();
+  const date=document.getElementById('mD').value;
+  const time=document.getElementById('mH').value;
+  if(!title||!date||!time){toast('⚠️ Título, data e hora obrigatórios');return;}
+  const ev={id:editId||Date.now().toString(),title,date,time,
+    local:document.getElementById('mL').value.trim(),
+    notes:document.getElementById('mN').value.trim(),
+    color:selCol,alarms:[...selAlarms]};
+  if(editId)evs=evs.map(e=>e.id===editId?ev:e);
+  else evs.push(ev);
+  saveLocal();closeModal();render();schedAlarms();
+  toast(editId?'✏️ Atualizado!':'✅ Salvo!');
+}
+
+function delEv(id){
+  if(!confirm('Excluir?'))return;
+  evs=evs.filter(e=>e.id!==id);
+  saveLocal();render();toast('🗑️ Excluído');
+}
+
+function speakEv(id){
+  const ev=evs.find(e=>e.id===id);if(!ev)return;
+  const now=new Date();
+  const diff=Math.round((new Date(ev.date+'T'+ev.time)-now)/60000);
+  const when=diff<0?'que já passou':diff<60?`em ${diff} minutos`:`às ${ev.time}`;
+  speak(`${ev.title}, ${when}${ev.local?', em '+ev.local:''}`);
+  toast(`🔊 ${ev.title} — ${when}`);
+}
+
+function qAdd(){
+  const qi=document.getElementById('qi');
+  const v=qi.value.trim();if(!v)return;
+  openModal();document.getElementById('mT').value=v;qi.value='';
+}
+
+function setView(v,el){
+  view=v;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('slabel').textContent={hoje:'Hoje',semana:'Esta Semana',todos:'Todos'}[v];
+  render();
+}
+
+function datePretty(ds){
+  const d=new Date(ds+'T12:00:00');
+  return DAYS[d.getDay()]+', '+d.getDate()+'/'+MONTHS[d.getMonth()];
+}
+
+function render(){
+  const now=new Date();const td=today();
+  let list=[...evs].sort((a,b)=>new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+  if(view==='hoje')list=list.filter(e=>e.date===td);
+  else if(view==='semana'){
+    const end=new Date(now);end.setDate(end.getDate()+7);
+    list=list.filter(e=>{const d=new Date(e.date+'T12:00:00');return d>=new Date(td+'T00:00:00')&&d<=end;});
+  }
+  const el=document.getElementById('list');
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div style="font-size:40px;margin-bottom:12px">📭</div><div style="font-size:14px;line-height:1.6">Nenhum compromisso aqui.<br>Use o microfone ou "+" para adicionar!</div></div>';
+    return;
+  }
+  el.innerHTML=list.map(ev=>{
+    const diff=(new Date(ev.date+'T'+ev.time)-now)/60000;
+    const past=diff<0,soon=diff>=0&&diff<=60;
+    let badge='',bc='rgba(124,106,247,.15)',bcolor='#7c6af7';
+    if(past){badge='Passou';bc='rgba(120,120,150,.15)';bcolor='#7a7a9a';}
+    else if(diff<=5){badge='Agora!';bc='rgba(247,196,106,.15)';bcolor='#f7c46a';}
+    else if(soon){badge=`em ${Math.round(diff)} min`;bc='rgba(247,196,106,.15)';bcolor='#f7c46a';}
+    else if(diff<=1440)badge=`em ${pad(Math.floor(diff/60))}h${pad(Math.round(diff%60))}`;
+    else badge=datePretty(ev.date);
+    return`<div class="card ${soon&&!past?'urgent':''} ${past?'past':''}">
+      <div class="dot" style="background:${ev.color||'#7c6af7'}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="ctitle">${ev.title}</div>
+        <div class="cmeta"><span>🕐 ${ev.time}</span>${ev.date!==td?`<span>📅 ${datePretty(ev.date)}</span>`:''} ${ev.local?`<span>📍 ${ev.local}</span>`:''}</div>
+        <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+          ${badge?`<span class="badge" style="background:${bc};color:${bcolor}">${badge}</span>`:''}
+          <span style="font-size:12px">${ev.alarms&&ev.alarms.length?'🔔':'🔕'}</span>
+        </div>
+      </div>
+      <div class="cactions">
+        <button class="ibtn" onclick="speakEv('${ev.id}')">🔊</button>
+        <button class="ibtn" onclick="openModal('${ev.id}')">✏️</button>
+        <button class="ibtn" onclick="delEv('${ev.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+render();schedAlarms();setInterval(render,60000);
+</script>
+</body>
+</html>
